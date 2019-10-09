@@ -6,11 +6,29 @@ var result = (function () {
         data: {} //insider this there will be currentDate:site:seconds
     }
 
-    //Real Time Update
+
+    const STORAGE = chrome.storage.sync;
+
+
+
+    //For getting real time update from the Ui
+    chrome.runtime.onMessage.addListener(
+        function(response, sender, sendResponse) {
+            let temp = response.split(" ");
+            let new_url = temp[0];
+            let new_url_value = temp[1];
+            STORAGE.get("cacheStorage",function(result){
+                result.cacheStorage.configuration[new_url]=new_url_value;
+                Object.assign(cacheStorage.configuration, result.cacheStorage.configuration);
+                STORAGE.set({"cacheStorage": cacheStorage});//for the key configuration
+            })
+
+        }
+    );
 
     let delayHandler;
 
-    const setDelayedAction = async (name) => {
+    const trackRealTime = async (name) => {
         const { configuration } = cacheStorage;
         if (configuration[name]) {
             const currentDate = getCurrentDate();
@@ -26,10 +44,17 @@ var result = (function () {
                 notify(`You can no longer be on ${name}`);
                 chrome.tabs.executeScript({
 
-                    code: "document.body.style.opacity='0.5';document.body.style.pointerEvents = 'none';let iDiv = document.createElement('div');iDiv.id = 'block';iDiv.className = 'block';iDiv.style.left='500px';iDiv.style.top='200px';iDiv.style.height ='500px';iDiv.style.width ='500px';iDiv.style.zIndex = '2147483647';iDiv.style.backgroundColor='Orange';iDiv.style.position='fixed';document.body.insertAdjacentElement('beforebegin', iDiv);var btn = document.createElement('BUTTON');" +
-                        "btn.innerHTML = 'Continue';iDiv.appendChild(btn);btn.style.position='absolute';btn.style.left='160px';btn.style.top='200px';"+
-                        "var p1 = document.createElement('p'); p1.innerHTML='Oops....You have exceeded the time limit';iDiv.appendChild(p1);"+
-                        "btn.addEventListener('click',function(){iDiv.parentNode.removeChild(iDiv); document.body.style.opacity='1';document.body.style.pointerEvents='auto';})"
+                    code: `document.body.style.opacity='0.5';document.body.style.pointerEvents = 'none';
+                    let iDiv = document.createElement('div');iDiv.id = 'block';iDiv.className = 'block';
+                    iDiv.style.left='500px';iDiv.style.top='200px';iDiv.style.height ='500px';iDiv.style.width ='500px';
+                    iDiv.style.zIndex = '2147483647';iDiv.style.backgroundColor='Orange';iDiv.style.position='fixed';
+                    document.body.insertAdjacentElement('beforebegin', iDiv);var btn = document.createElement('BUTTON');
+                    btn.innerHTML = 'Continue';iDiv.appendChild(btn);btn.style.position='absolute';btn.style.left='160px';btn.style.top='200px';
+                    var p1 = document.createElement('p'); p1.innerHTML='Oops....You have exceeded the time limit';
+                    iDiv.appendChild(p1);
+                    btn.addEventListener('click',function(){
+                    iDiv.parentNode.removeChild(iDiv); document.body.style.opacity='1';
+                    document.body.style.pointerEvents='auto';})`
 
                 });
             }, secondsLeft * 1000);
@@ -38,7 +63,6 @@ var result = (function () {
 
     //TODO first refine the current app itself---DONE
     //TODO data should persist atleast for a single day--DONE
-    //TODO use popup instead of iframe
     //TODO tab should not close, overlay should be shown, user should be able to close overlay and show msg if user ignores--DONE
     //TODO Url refinement a bit more--DONE
     //TODO realtime update-- DONE
@@ -62,7 +86,7 @@ var result = (function () {
 
 
 //Check whether to continue previous data or initialize
-    chrome.storage.sync.get('cacheStorage', function(result) {
+    STORAGE.get('cacheStorage', function(result) {
         if (result) {
 
             let  currentDate = getCurrentDate();
@@ -78,12 +102,12 @@ var result = (function () {
             else    //if there's no data for the currrent data
             {
                 initialize();
-                chrome.storage.sync.set({'cacheStorage': cacheStorage});
+                STORAGE.set({'cacheStorage': cacheStorage});
 
             }
         } else {
             initialize();
-            chrome.storage.sync.set({'cacheStorage': cacheStorage});
+            STORAGE.set({'cacheStorage': cacheStorage});
 
         }
     });
@@ -118,13 +142,6 @@ var result = (function () {
         });
     }
 
-    chrome.tabs.query({
-        active: true,
-        currentWindow: true
-    }, function (tabs) {
-        var tab = tabs[0];
-        var url = tab.url;
-    });
 
     function pad(number) {
         if (number < 10) {
@@ -152,9 +169,11 @@ var result = (function () {
 
         const currentDate = getCurrentDate();
 
-        chrome.storage.sync.get("cacheStorage", function (result) {
 
-            //Think if this is redundant
+
+        STORAGE.get("cacheStorage", function (result) {
+
+            //Assigning the cacheStorage from the chrome storage to JavaScript Object
             if (result.cacheStorage.configuration) {
                 console.log("From Background storage" + (result.cacheStorage.configuration['facebook']));
                 let moment = Date.now();
@@ -162,7 +181,7 @@ var result = (function () {
                 console.log(result.cacheStorage['configuration']);
                 Object.assign(cacheStorage.configuration, result.cacheStorage.configuration);
 
-                chrome.storage.sync.set({"cacheStorage":cacheStorage});
+                STORAGE.set({"cacheStorage":cacheStorage});
 
                 console.log(cacheStorage['configuration']);
                 //cacheStorage['configuration'] = result.cacheStorage.configuration;
@@ -180,7 +199,7 @@ var result = (function () {
                 //Just eliminate the previous redundant value
 
                 if (Object.keys(cacheStorage.data[currentDate]).length !== 0) {
-                    chrome.storage.sync.get("new_url", function (UrlObject) {
+                    STORAGE.get("new_url", function (UrlObject) {
 
                         console.log(Object.keys(cacheStorage.data[currentDate]).length);
                         console.log("new_url is working" + UrlObject.new_url);
@@ -193,10 +212,7 @@ var result = (function () {
 
                     });
                 }
-//                                if(result.cacheStorage.data[currentDate]['linkedin']===0)
-//                               { cacheStorage.data[currentDate]['linkedin'] = result.cacheStorage.data[currentDate]['linkedin'];
-//                                    console.log('local storage got updated');
-//                                }
+
                 console.log('Updated cacheStorage ');
                 console.log(cacheStorage);
             }
@@ -238,7 +254,7 @@ var result = (function () {
             console.log(active.name + "  " + cacheStorage.data[currentDate][active.name]);
 
 
-            chrome.storage.sync.set({"cacheStorage": cacheStorage}, function () {
+            STORAGE.set({"cacheStorage": cacheStorage}, function () {
                 console.log('cacheStorage saved');
             });
 
@@ -246,7 +262,6 @@ var result = (function () {
     }
 
 
-//TODO domain clean
     function getName(url) {
         try {
             const host = new URL(url).hostname;
@@ -258,6 +273,16 @@ var result = (function () {
 
 
     async function setActive() {
+
+
+        //Hacky Patch
+        // setTimeout(function () {
+        //     STORAGE.get("cacheStorage", function (result) {
+        //         console.log("New Changes", result.cacheStorage);
+        //     });
+        // }, 1000);
+        //Hacky Patch
+
         const activeTab = await getActiveTab();
         console.log("reached setActive");
 
@@ -276,7 +301,7 @@ var result = (function () {
                 //Testing
 
 
-                chrome.storage.sync.get("cacheStorage", function (result) {
+                STORAGE.get("cacheStorage", function (result) {
 
                     //Check if any limit is set for the active site
 
@@ -289,9 +314,6 @@ var result = (function () {
                     if (cacheStorage.data[currentDate])
                         console.log('From Storage2--' + cacheStorage.data[currentDate][name])
 
-
-                    let html ="<div style='background-color: red'><p>You Have Exceeded the Time Limit</p></div>";
-                    let flag =true;
                     let iDiv = document.createElement('div');iDiv.id = 'block';iDiv.className = 'block';
 
                     if (cacheStorage.data[currentDate] && cacheStorage.data[currentDate][name]) {
@@ -301,10 +323,17 @@ var result = (function () {
 
                                  chrome.tabs.executeScript({
 
-                                     code: "document.body.style.opacity='0.5';document.body.style.pointerEvents = 'none';let iDiv = document.createElement('div');iDiv.id = 'block';iDiv.className = 'block';iDiv.style.left='500px';iDiv.style.top='200px';iDiv.style.height ='500px';iDiv.style.width ='500px';iDiv.style.zIndex = '2147483647';iDiv.style.backgroundColor='Orange';iDiv.style.position='fixed';document.body.insertAdjacentElement('beforebegin', iDiv);var btn = document.createElement('BUTTON');" +
-                                         "btn.innerHTML = 'Continue';iDiv.appendChild(btn);btn.style.position='absolute';btn.style.left='160px';btn.style.top='200px';"+
-                                         "var p1 = document.createElement('p'); p1.innerHTML='Oops....You have exceeded the time limit';iDiv.appendChild(p1);"+
-                                         "btn.addEventListener('click',function(){iDiv.parentNode.removeChild(iDiv); document.body.style.opacity='1';document.body.style.pointerEvents='auto';})"
+                                     code: `document.body.style.opacity='0.5';document.body.style.pointerEvents = 'none';
+                                let iDiv = document.createElement('div');iDiv.id = 'block';iDiv.className = 'block';
+                                iDiv.style.left='500px';iDiv.style.top='200px';iDiv.style.height ='500px';iDiv.style.width ='500px';
+                                iDiv.style.zIndex = '2147483647';iDiv.style.backgroundColor='Orange';iDiv.style.position='fixed';
+                                document.body.insertAdjacentElement('beforebegin', iDiv);var btn = document.createElement('BUTTON');
+                                btn.innerHTML = 'Continue';iDiv.appendChild(btn);btn.style.position='absolute';btn.style.left='160px';btn.style.top='200px';
+                                var p1 = document.createElement('p'); p1.innerHTML='Oops....You have exceeded the time limit';
+                                iDiv.appendChild(p1);
+                                btn.addEventListener('click',function(){
+                                iDiv.parentNode.removeChild(iDiv); document.body.style.opacity='1';
+                                document.body.style.pointerEvents='auto';})`
 
                                  });
 
@@ -331,9 +360,9 @@ var result = (function () {
                 cacheStorage.active.timeStamp = Date.now();
 
                 clearTimeout(delayHandler);
-                setDelayedAction(name);//Doubt for Id
+                trackRealTime(name);//Doubt for Id
 
-                chrome.storage.sync.set({'cacheStorage':cacheStorage});
+                STORAGE.set({'cacheStorage':cacheStorage});
                 console.log(cacheStorage);
             }
         }

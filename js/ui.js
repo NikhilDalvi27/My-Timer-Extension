@@ -5,6 +5,8 @@ let configuration = {};
 
 let cacheStorage = {};
 
+const STORAGE =chrome.storage.sync;
+
 //For Adding a new Site for tracking via UI
 function getName(url) {
     try {
@@ -21,7 +23,6 @@ window.addEventListener('load', (event) => {
 });
 
 
-//Note this is changed
 document.getElementById('btnNewurlvalue').addEventListener('click', function () {
     let new_url = document.getElementById("new_url").value;
 
@@ -30,7 +31,7 @@ document.getElementById('btnNewurlvalue').addEventListener('click', function () 
     console.log('new url is ' + new_url);
 
     let currentDate = getCurrentDate();
-    chrome.storage.sync.get("cacheStorage", function (result) {
+    STORAGE.get("cacheStorage", function (result) {
 
         //console.log("First this");
         if (Object.keys(result.cacheStorage.data[currentDate]).length > 0) {
@@ -42,10 +43,10 @@ document.getElementById('btnNewurlvalue').addEventListener('click', function () 
         //  let cacheStorage1 = result.cacheStorage;
 
         if (new_url !== "undefined")
-            chrome.storage.sync.set({"new_url": new_url});
+            STORAGE.set({"new_url": new_url});//This is useless
 
 
-        // chrome.storage.sync.set({"configuration": cacheStorage1} ,function()
+        // STORAGE.set({"configuration": cacheStorage1} ,function()
         // {
         //    // console.log('Value is set to new url '+ result.cacheStorage.data[currentDate][new_url]);
         //
@@ -58,51 +59,52 @@ document.getElementById('btnNewurlvalue').addEventListener('click', function () 
         let new_url_value = document.getElementById("new_url_value").value;
         //configuration[new_url] = new_url_value;
 
+        //Eliminating the need of alt+tab
+        let message  = new_url+" "+new_url_value;
+        chrome.runtime.sendMessage(message);
+        //Eliminating the need of alt+tab
+
 
 
         result.cacheStorage.configuration[new_url]=new_url_value;
 
-        let cacheStorage={};
+
         cacheStorage = result.cacheStorage;
 
         Object.assign(cacheStorage.configuration, result.cacheStorage.configuration);
 
-        chrome.storage.sync.set({"cacheStorage": cacheStorage});//for the key configuration
+        STORAGE.set({"cacheStorage": cacheStorage});//for the key configuration
         console.log('Here in UI' +  result.cacheStorage.configuration[new_url]);
-
-//                document.getElementById('btnNewurlvalue').addEventListener('click',function(){
-//
-//
-//                        });
-
 
     });
 
 });
-
+function sendMessage(url,value)
+{
+    let message  = url+" "+value;
+    chrome.runtime.sendMessage(message);
+}
 
 document.getElementById("btnFacebook").addEventListener("click", function () {
     let value = document.getElementById("Facebook").value;
     console.log(value);
-    chrome.storage.sync.get("cacheStorage", function (result) {
+    STORAGE.get("cacheStorage", function (result) {
+
+
+        sendMessage('facebook',value);
 
         result.cacheStorage.configuration['facebook'] = value;//for the key cacheStorage
-
-        //Testing
+synchronize
         console.log(result.cacheStorage.configuration['facebook']);
 
         cacheStorage = result.cacheStorage;
-        //console.log(cacheStorage1.configuration['youtube']);
 
         console.log(cacheStorage.configuration['facebook']);
 
-        //Experiment
-        //Working Code
-        chrome.storage.sync.set({"cacheStorage": cacheStorage}, function () {
+        STORAGE.set({"cacheStorage": cacheStorage}, function () {
             console.log('Value is set to' + result.cacheStorage.configuration['facebook']);
         });
 
-        //Testing
 
     });
 
@@ -112,7 +114,10 @@ document.getElementById("btnFacebook").addEventListener("click", function () {
 document.getElementById("btnYoutube").addEventListener("click", function () {
     let value = document.getElementById("Youtube").value;
     console.log(value);
-    chrome.storage.sync.get("cacheStorage", function (result) {
+    STORAGE.get("cacheStorage", function (result) {
+
+
+        sendMessage('youtube',value);
 
         result.cacheStorage.configuration['youtube'] = value;//for the key cacheStorage
 
@@ -126,7 +131,7 @@ document.getElementById("btnYoutube").addEventListener("click", function () {
 
         //Experiment
         //Working Code
-        chrome.storage.sync.set({"cacheStorage": cacheStorage}, function () {
+        STORAGE.set({"cacheStorage": cacheStorage}, function () {
             console.log('Value is set to' + result.cacheStorage.configuration['youtube']);
         });
 
@@ -139,7 +144,9 @@ document.getElementById("btnYoutube").addEventListener("click", function () {
 document.getElementById("btnLinkedin").addEventListener("click", function () {
     let value = document.getElementById("Linkedin").value;
     console.log(value);
-    chrome.storage.sync.get("cacheStorage", function (result) {
+    STORAGE.get("cacheStorage", function (result) {
+
+        sendMessage('linkedin',value);
 
         result.cacheStorage.configuration['linkedin'] = value;//for the key cacheStorage
 
@@ -153,7 +160,7 @@ document.getElementById("btnLinkedin").addEventListener("click", function () {
 
         //Experiment
         //Working Code
-        chrome.storage.sync.set({"cacheStorage": cacheStorage}, function () {
+        STORAGE.set({"cacheStorage": cacheStorage}, function () {
             console.log('Value is set to' + result.cacheStorage.configuration['linkedin']);
         });
 
@@ -166,7 +173,10 @@ document.getElementById("btnLinkedin").addEventListener("click", function () {
 document.getElementById("btnInstagram").addEventListener("click", function () {
     let value = document.getElementById("Instagram").value;
     console.log(value);
-    chrome.storage.sync.get("cacheStorage", function (result) {
+    STORAGE.get("cacheStorage", function (result) {
+
+        sendMessage('instagram',value);
+
 
         result.cacheStorage.configuration['instagram'] = value;//for the key cacheStorage
 
@@ -180,7 +190,7 @@ document.getElementById("btnInstagram").addEventListener("click", function () {
 
         //Experiment
         //Working Code
-        chrome.storage.sync.set({"cacheStorage": cacheStorage}, function () {
+        STORAGE.set({"cacheStorage": cacheStorage}, function () {
             console.log('Value is set to' + result.cacheStorage.configuration['instagram']);
         });
 
@@ -221,7 +231,7 @@ document.getElementById("btnTimeSpent").addEventListener("click", function () {
     document.getElementById('myChart').style.display = "block";
     document.getElementById('Control').style.display = "none";
 
-    chrome.storage.sync.get('cacheStorage', function (result) {
+    STORAGE.get('cacheStorage', function (result) {
 
 
         let timer = 'timer';
@@ -237,7 +247,6 @@ document.getElementById("btnTimeSpent").addEventListener("click", function () {
         console.log(currentDate);
 
 
-        let flag = false;
 
         keys = Object.keys(result.cacheStorage.data[currentDate]);
 
