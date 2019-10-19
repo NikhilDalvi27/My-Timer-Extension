@@ -275,14 +275,6 @@ var result = (function () {
     async function setActive() {
 
 
-        //Hacky Patch
-        // setTimeout(function () {
-        //     STORAGE.get("cacheStorage", function (result) {
-        //         console.log("New Changes", result.cacheStorage);
-        //     });
-        // }, 1000);
-        //Hacky Patch
-
         const activeTab = await getActiveTab();
         console.log("reached setActive");
 
